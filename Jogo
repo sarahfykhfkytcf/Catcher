@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo da Cesta</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #87CEEB;
+            font-family: Arial, sans-serif;
+            flex-direction: column;
+        }
+
+        #gameCanvas {
+            border: 2px solid #000;
+            background-color: #f0f8ff;
+        }
+
+        #score {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 24px;
+            color: #000;
+        }
+
+        #gameOver {
+            display: none;
+            font-size: 36px;
+            color: red;
+            text-align: center;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        #startButton {
+            padding: 15px 30px;
+            font-size: 18px;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 20px;
+            background-color: #4CAF50;
+        }
+
+        #startButton:hover {
+            background-color: #45a049;
+        }
+
+        #speedPanel {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #decreaseSpeed, #increaseSpeed {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border: 2px solid #007bff;
+            background-color: #87CEEB;
+            color: white;
+            margin: 0 10px;
+            border-radius: 5px;
+        }
+
+        #decreaseSpeed:hover, #increaseSpeed:hover {
+            background-color: #4CAF50;
+        }
+
+        #currentSpeed {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 0 10px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="600" height="400"></canvas>
+    <div id="score">Pontos: 0</div>
+    <div id="gameOver">Jogo Over! <br> Pontuação Final: 0</div>
+    <button id="startButton">Iniciar Jogo</button>
+
+    <div id="speedPanel">
+        <button id="decreaseSpeed">-</button>
+        <span id="currentSpeed">Velocidade: 1.0</span>
+        <button id="increaseSpeed">+</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        let score = 0;
+        let gameOver = false;
+        let basketX = canvas.width / 2 - 50;  // Posição inicial da cesta
+        let basketWidth = 100; // Largura da cesta
+        let basketHeight = 20; // Altura da cesta
+        let basketSpeed = 7; // Velocidade da cesta
+        let basketMoveLeft = false;
+        let basketMoveRight = false;
+
+        let fruits = []; // Array de frutas que estão caindo
+        let fruitFallSpeed = 1.0; // Velocidade de queda das frutas (começando com 1.0)
+
+        const startButton = document.getElementById("startButton");
+        const scoreDisplay = document.getElementById("score");
+        const gameOverDisplay = document.getElementById("gameOver");
+        const decreaseSpeedButton = document.getElementById("decreaseSpeed");
+        const increaseSpeedButton = document.getElementById("increaseSpeed");
+        const currentSpeedDisplay = document.getElementById("currentSpeed");
+
+        // Função que cria frutas
+        function createFruit() {
+            let fruitX = Math.random() * (canvas.width - 30);
+            let fruitY = -30; // As frutas começam acima da tela
+
+            // Garantir que as frutas não apareçam no mesmo nível no eixo Y
+            // Verificar a distância entre a nova fruta e as existentes
+            while (fruits.some(fruit => Math.abs(fruit.y - fruitY) < 30)) {
+                fruitY = Math.random() * canvas.height - 30; // Nova posição y aleatória
+            }
+
+            const fruit = { x: fruitX, y: fruitY, width: 30, height: 30 };
+            fruits.push(fruit);
+        }
+
+        // Função para desenhar a cesta
+        function drawBasket() {
+            ctx.fillStyle = "#8B4513"; // Cor da cesta
+            ctx.fillRect(basketX, canvas.height - basketHeight, basketWidth, basketHeight);
+        }
+
+        // Função para desenhar as frutas
+        function drawFruits() {
+            ctx.fillStyle = "#FF6347"; // Cor das frutas (tomate, por exemplo)
+            for (let i = 0; i < fruits.length; i++) {
+                let fruit = fruits[i];
+                ctx.beginPath();
+                ctx.arc(fruit.x + fruit.width / 2, fruit.y + fruit.height / 2, fruit.width / 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Função para verificar colisão entre a cesta e as frutas
+        function checkCollisions() {
+            for (let i = 0; i < fruits.length; i++) {
+                let fruit = fruits[i];
+                if (
+                    fruit.x + fruit.width / 2 > basketX &&
+                    fruit.x + fruit.width / 2 < basketX + basketWidth &&
+                    fruit.y + fruit.height / 2 > canvas.height - basketHeight
+                ) {
+                    fruits.splice(i, 1); // Remove a fruta que foi pega
+                    score++;
+                    scoreDisplay.innerText = `Pontos: ${score}`;
+                }
+            }
+        }
+
+        // Função para verificar se uma fruta caiu no chão
+        function checkFruitFall() {
+            for (let i = 0; i < fruits.length; i++) {
+                let fruit = fruits[i];
+                if (fruit.y > canvas.height) {
+                    gameOver = true;
+                    gameOverDisplay.style.display = "block";
+                    gameOverDisplay.innerHTML = `Jogo Over! <br> Pontuação Final: ${score}`;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // Função de atualização do jogo
+        function update() {
+            if (gameOver) return;
+
+            // Limpar a tela
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Mover as frutas para baixo
+            for (let i = 0; i < fruits.length; i++) {
+                fruits[i].y += fruitFallSpeed;
+            }
+
+            // Desenhar as frutas
+            drawFruits();
+
+            // Desenhar a cesta
+            drawBasket();
+
+            // Verificar colisões com a cesta
+            checkCollisions();
+
+            // Verificar se alguma fruta caiu no chão
+            if (checkFruitFall()) return;
+
+            // Criar novas frutas com menos frequência
+            if (Math.random() < 0.005) { // Menor chance de criar uma nova fruta
+                createFruit();
+            }
+
+            // Mover a cesta para a esquerda ou direita
+            if (basketMoveLeft && basketX > 0) {
+                basketX -= basketSpeed;
+            }
+            if (basketMoveRight && basketX + basketWidth < canvas.width) {
+                basketX += basketSpeed;
+            }
+
+            requestAnimationFrame(update); // Chama a função de atualização
+        }
+
+        // Função de controle de teclas
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "ArrowLeft") basketMoveLeft = true;
+            if (event.key === "ArrowRight") basketMoveRight = true;
+        });
+
+        document.addEventListener("keyup", (event) => {
+            if (event.key === "ArrowLeft") basketMoveLeft = false;
+            if (event.key === "ArrowRight") basketMoveRight = false;
+        });
+
+        // Função para reiniciar o jogo
+        function restartGame() {
+            score = 0;
+            gameOver = false;
+            basketX = canvas.width / 2 - 50;
+            fruits = [];
+            scoreDisplay.innerText = `Pontos: 0`;
+            gameOverDisplay.style.display = "none";
+            update(); // Iniciar o loop de atualização novamente
+        }
+
+        // Ajustar a velocidade de queda das frutas (diminuir)
+        decreaseSpeedButton.addEventListener("click", () => {
+            if (fruitFallSpeed > 0.5) {
+                fruitFallSpeed -= 0.1;
+                currentSpeedDisplay.innerText = `Velocidade: ${fruitFallSpeed.toFixed(1)}`;
+            }
+        });
+
+        // Ajustar a velocidade de queda das frutas (aumentar)
+        increaseSpeedButton.addEventListener("click", () => {
+            fruitFallSpeed += 0.1;
+            currentSpeedDisplay.innerText = `Velocidade: ${fruitFallSpeed.toFixed(1)}`;
+        });
+
+        // Iniciar o jogo quando o botão for pressionado
+        startButton.addEventListener("click", () => {
+            startButton.style.display = "none";
+            update(); // Começa o jogo
+        });
+    </script>
+</body>
+</html>
