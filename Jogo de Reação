@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo de Reação</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #2c3e50;
+        }
+
+        #gameArea {
+            position: relative;
+            width: 500px;
+            height: 400px;
+            margin: 0 auto;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        #targetButton {
+            position: absolute;
+            padding: 10px 20px;
+            font-size: 18px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        #targetButton:hover {
+            background-color: #2980b9;
+        }
+
+        #score {
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+
+        #startButton {
+            padding: 10px 20px;
+            font-size: 18px;
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        #startButton:hover {
+            background-color: #27ae60;
+        }
+
+        #message {
+            font-size: 20px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Jogo de Reação</h1>
+    <p>Clique no botão o mais rápido possível!</p>
+
+    <div id="gameArea">
+        <button id="targetButton" style="display:none;">Clique aqui!</button>
+    </div>
+
+    <div id="score">Pontuação: 0</div>
+    <div id="message"></div>
+    <button id="startButton">Iniciar Jogo</button>
+
+    <script>
+        const targetButton = document.getElementById('targetButton');
+        const scoreDisplay = document.getElementById('score');
+        const messageDisplay = document.getElementById('message');
+        const startButton = document.getElementById('startButton');
+        const gameArea = document.getElementById('gameArea');
+
+        let score = 0;
+        let gameRunning = false;
+        let gameTime = 30;  // Jogo dura 30 segundos
+        let gameInterval;
+
+        // Função para gerar uma posição aleatória para o botão
+        function randomizePosition() {
+            const maxX = gameArea.clientWidth - targetButton.clientWidth;
+            const maxY = gameArea.clientHeight - targetButton.clientHeight;
+
+            const randomX = Math.floor(Math.random() * maxX);
+            const randomY = Math.floor(Math.random() * maxY);
+
+            targetButton.style.left = `${randomX}px`;
+            targetButton.style.top = `${randomY}px`;
+        }
+
+        // Função para iniciar o jogo
+        function startGame() {
+            score = 0;
+            scoreDisplay.textContent = `Pontuação: ${score}`;
+            messageDisplay.textContent = '';
+            gameRunning = true;
+
+            startButton.style.display = 'none'; // Esconde o botão de iniciar
+
+            // Iniciar o intervalo de 1 segundo para mostrar o botão aleatoriamente
+            gameInterval = setInterval(() => {
+                if (!gameRunning) return;
+
+                randomizePosition();
+                targetButton.style.display = 'block';  // Exibe o botão
+
+                // Esconde o botão aleatoriamente após 1 a 3 segundos
+                setTimeout(() => {
+                    targetButton.style.display = 'none';
+                }, Math.floor(Math.random() * 2000) + 1000); // 1 a 3 segundos
+            }, 1500);  // A cada 1.5 segundos o botão aparece
+
+            // Timer do jogo (30 segundos)
+            setTimeout(endGame, gameTime * 1000);
+        }
+
+        // Função para finalizar o jogo
+        function endGame() {
+            gameRunning = false;
+            clearInterval(gameInterval);
+            messageDisplay.textContent = `Jogo terminado! Sua pontuação final é ${score}.`;
+            startButton.style.display = 'block';  // Exibe o botão de reiniciar
+        }
+
+        // Função para processar o clique no botão
+        targetButton.addEventListener('click', () => {
+            if (gameRunning) {
+                score++;
+                scoreDisplay.textContent = `Pontuação: ${score}`;
+            }
+        });
+
+        // Função para reiniciar o jogo
+        startButton.addEventListener('click', () => {
+            if (!gameRunning) {
+                startGame();
+            }
+        });
+    </script>
+</body>
+</html>
